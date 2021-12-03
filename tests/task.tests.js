@@ -15,7 +15,7 @@ module.exports = describe("Task", function(){
 
       task.save(model, {name: "John"});
 
-      return expect(task.run({useMongoose: true})).to.eventually.not.be.rejected;//With(/validation failed/);
+      return expect(task.run()).to.eventually.not.be.rejected;//With(/validation failed/);
     });
   });
 
@@ -133,7 +133,7 @@ module.exports = describe("Task", function(){
       task.save(cat)
         .update(cat, c)
         .options({viaSave: true})
-        .run({useMongoose: true})
+        .run()
         .then(function(results){
           expect(results[1].age).to.equal(newAge);
           done();
@@ -274,12 +274,10 @@ module.exports = describe("Task", function(){
 
       task.save(coll, {name: "Jon Jones", champ: false})
         .save(coll, {name: "Daniel Cormier", champ: true})
-        .update(coll, {name: {$ojFuture: "0.name"}}, {champ: true})
-        .update(coll, {name: {$ojFuture: "1.name"}}, {champ: false})
-        .save(coll, {name: "Damian Maia", champ: false})
-        .remove(coll, {_id: {$ojFuture: "4._id"}});
+        .update(coll, {name: "Jon Jones" }, {champ: true})
+        .update(coll, {name: "Daniel Cormier" }, {champ: false})
 
-      return expect(task.run({useMongoose: true}))
+      return expect(task.run())
         .to.eventually.not.be.rejected;
     });
 
@@ -319,38 +317,6 @@ module.exports = describe("Task", function(){
           .remove(TEST_COLLECTION_A, {name: "Gabe's Owner"})
           .run())
         .to.eventually.have.length(4);
-    });
-  });
-
-  describe("Templating tests for future data", function () {
-    it("task with templated data should run successfully", function () {
-      var mickey = new TestMdlB({name: "Mickey Mouse", age: 53, list: [{num: 53}]});
-      var mick = new TestMdlA({name: "Mick", age: 3});
-
-      return task.save(mickey)
-        .save(mick)
-        .save(TEST_COLLECTION_A, {name: "Alfie", age: {$ojFuture: "1.ops.0.age"}})
-        .save(TEST_COLLECTION_B, {name: "Minnie Mouse", age: {$ojFuture: "0.ops.0.list.0.num"}})
-        .update(TEST_COLLECTION_B, {name: {$ojFuture: "0.ops.0.name"}}, {age: {$ojFuture: "1.ops.0.age"}})
-        .update(TEST_COLLECTION_A, {name: {$ojFuture: "1.ops.0.name"}}, {age: {$ojFuture: "3.ops.0.age"}})
-        .remove(TEST_COLLECTION_A, {name: {$ojFuture: "2.ops.0.name"}, age: 3})
-        .run();
-    });
-
-    it("Should have Mickey Mouse in " + TEST_COLLECTION_B + " with age 3", function () {
-      return expect(TestMdlB.find({name: "Mickey Mouse", age: 3}).exec()).to.eventually.have.length(1);
-    });
-
-    it("Should have Mick in " + TEST_COLLECTION_A + " with age 53", function () {
-      return expect(TestMdlA.find({name: "Mick", age: 53}).exec()).to.eventually.have.length(1);
-    });
-
-    it("Should have Minnie Mouse in " + TEST_COLLECTION_B + " with age 53", function () {
-      return expect(TestMdlB.find({name: "Minnie Mouse", age: 53}).exec()).to.eventually.have.length(1);
-    });
-
-    it("Should not have Alfie in " + TEST_COLLECTION_A, function () {
-      return expect(TestMdlA.find({name: "Alfie"}).exec()).to.eventually.have.length(0);
     });
   });
 });

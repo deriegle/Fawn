@@ -14,7 +14,7 @@ module.exports = describe("Roller", function(){
         .update(TEST_COLLECTION_B, {name: "Puss in Boots"}, {name: "Aristocat", age: 6})
         .save(TEST_COLLECTION_A, {_id: ["fail"]}, {name: "fail"});
 
-      return expect(task.run())
+      return expect(task.run({ useMongoose: false }))
         .to.eventually.be
         .rejectedWith(/can't use an array for _id/);
     });
@@ -22,7 +22,7 @@ module.exports = describe("Roller", function(){
     it("should rollback save", function(){
       return task.save(TestMdlA, {name: "Arya Stark", age: 34})
         .save(TestMdlA, {_id: ["fail"]}, {name: "fail"})
-        .run()
+        .run({ useMongoose: false })
         .then(failure)
         .catch(function(){
           return expect(TestMdlA.find({name: "Arya Stark"}).exec())
@@ -35,11 +35,11 @@ module.exports = describe("Roller", function(){
         .run()
         .then(function(result){
           // Tyrion's id
-          var id = result[0].ops[0]._id;
+          const id = result[0]._id;
 
           return task.update(TestMdlA, {_id: id}, {name: "Jamie", $inc: {age: 1}})
             .save(TestMdlA, {_id: ["fail"]}, {name: "fail"})
-            .run()
+            .run({ useMongoose: false })
             .then(failure)
             .catch(function(){
               return expect(TestMdlA.find({name: "Tyrion Lannister"}).exec())
@@ -51,7 +51,7 @@ module.exports = describe("Roller", function(){
     it("should rollback remove", function(){
       return task.remove(TestMdlA, {name: "Tyrion Lannister"})
         .save(TestMdlA, {_id: ["fail"]}, {name: "fail"})
-        .run()
+        .run({ useMongoose: false })
         .then(failure)
         .catch(function(){
           return expect(TestMdlA.find({name: "Tyrion Lannister"}).exec()).to.eventually.have.length(1);
@@ -70,7 +70,7 @@ module.exports = describe("Roller", function(){
         .update(dog2, dog2b)
         .options({viaSave: true})
         .save(dog3)
-        .run({useMongoose: true})
+        .run()
         .then(failure)
         .catch(function(){
           return expect(TestMdlC.find().exec()).to.eventually.have.length(0);

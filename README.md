@@ -94,7 +94,7 @@ By default, tasks run using the native driver but you can opt for mongoose. If y
 ```javascript
 task.update("Accounts", {firstName: "Broke", lastName: "Ass"}, {$inc: {balance: -20}})
 task.update("Accounts", {firstName: "The", lastName: "Plug"}, {$inc: {balance: 20}})
-task.run({useMongoose: true})
+task.run()
   .then(function(){
     // update is complete
   })
@@ -187,7 +187,6 @@ var task = Fawn.Task();
   
   > schema (optional): Same as object passed to [mongoose Schema](http://mongoosejs.com/docs/guide.html#definition). Also see [validation](http://mongoosejs.com/docs/validation.html)
   
-  *Note: For model validation to work, run task with useMongoose set to true*
   <br>
 <br>Initalizes a mongoose model with the provided schema. If you're using mongoose, define your models with mongoose wherever possible. If the model has been defined by mongoose before this function is called, mongoose will throw an OverwriteModelError and if it was defined by Fawn, Fawn will throw an Error. Models can be defined only once.
   
@@ -199,7 +198,7 @@ var task = Fawn.Task();
   
   task.initModel("comedians", schema)
     .save("comedians", {name: "Kevin Hart", specials: [{title: "What Now", year: 2016}]})
-    .run({useMongoose: true})
+    .run()
     .then(function(results){
       console.log(results);
     });
@@ -296,7 +295,7 @@ with Fawn:
   
   task.update(doc, newDoc)
     .options({viaSave: true})
-    .run({useMongoose: true})
+    .run()
     .then(console.log);
   ```
   *Note: No changes will be made to to your database until you call task.run()*
@@ -388,8 +387,6 @@ with Fawn:
   
 ### <a name="task_run"></a>task.run(options): Run a task.
 
-  > options: {useMongoose: Boolean}
-  
   > returns: Promise
 
   For the database changes to occur, you must call task.run(). This function returns a promise. On success, the promise is resolved with an array containing the [node-mongodb-native](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html) or [mongoose](http://mongoosejs.com/docs/api.html) result of each operation in sequence. If an error occurs, the promise is rejected with the error that caused the failure.
@@ -397,7 +394,7 @@ with Fawn:
   ```javascript
   task.update("Accounts", {firstName: "John", lastName: "Smith"}, {$inc: {balance: -20}})
     .update("Accounts", {firstName: "Broke", lastName: "Ass"}, {$inc: {balance: 20}})
-    .run() // or run({useMongoose: true}); 
+    .run()
     .then(function(results){
       //task is complete 
 
@@ -446,28 +443,6 @@ with Fawn:
     });
   ```
   <br>
-  
-## <a name="misc"></a>Miscellaneous 
-
-### Using the result of previous steps in subsequent steps
-  You might want to use the result of a previous step in a subsequent step. You can do this using a template object with the key "$ojFuture". Syntax: {$ojFuture: "indexOfStep.resultProperty1.property2.-----.propertyN"}. Here's how:
-  
-  ```javascript
-  task.save("Kids", {name: {full: "Brody Obi"}}) //result will be {_id: someMongoId, name: {full: "Brody Obi"}}
-    .update("Parents", {_id: parentId}, {firstChild: {id: {$ojFuture: "0._id"} , fullName: {$ojFuture: "0.name.full"}})
-    .run({useMongoose: true})
-    .then(function(){
-    	// task is complete
-    })
-    .catch(function(err){
-      // Everything has been rolled back.
-    
-      //log the error which caused the failure
-      console.log(err);
-    });
-  ```
-  To use this feature you need to know the exact format of the step's result. For Reference: [Results](#task_run_results)
-  
   
 ## <a name="test"></a>Test
 
