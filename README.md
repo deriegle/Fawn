@@ -66,28 +66,6 @@ task.update("Accounts", {firstName: "John", lastName: "Smith"}, {$inc: {balance:
     console.log(err);
   });
 ```
-[GridFS]: <https://docs.mongodb.com/manual/core/gridfs/>
-
-Files can be saved to and removed from [GridFS][]. Here's how you might update a user's profile image:
-```javascript
-var newImageId = someMongoDbId;
-
-task.saveFile("/path/to/new/profile/img", {_id: newImageId, filename: "profile.png"})
-  .removeFile({_id: oldImageId})
-  .update("users", {_id: userId}, {profileImageId: newImageId})
-  .run()
-  .then(function(results){
-    var newImgFile = results[0];
-    
-    console.log(newImgFile.filename) // profile.png
-  })
-  .catch(function(err){
-    // Everything has been rolled back.
-    
-    // log the error which caused the failure
-    console.log(err);
-  });
-```
 
 By default, tasks run using the native driver but you can opt for mongoose. If you prefer not to chain function calls, you don't have to:
 
@@ -127,8 +105,6 @@ roller.roll()
 - [task.update](#task_update)
 - [task.options](#task_options)
 - [task.remove](#task_remove)
-- [task.saveFile](#task_savefile)
-- [task.removeFile](#task_removefile)
 - [task.run](#task_run)
 - [Fawn.Roller](#fawn_roller)
 - [Roller.roll](#roller_roll)
@@ -327,64 +303,6 @@ with Fawn:
 
   <br> 
   
-### <a name="task_savefile"></a>task.saveFile(filePath, options): Save a file to the db via [GridFS][]
-
-  > filePath (required): Path to the file 
-  
-  > options (optional): Same as [GridStore options][]
-  
-  [GridStore options]: <http://mongodb.github.io/node-mongodb-native/api-generated/gridstore.html#constructor>
-  
-  Saves the file at "filePath" to the database using GridFS. The result of this operation is the saved file's object. See [File object](https://docs.mongodb.com/manual/core/gridfs/#the-files-collection)
-  
-  ```javascript
-  task.saveFile("path/to/some/file", {filename: "a_string_filename.ext"})
-    .update("SomeCollection", updateConditions, updateData)
-    .run()
-    .then(function(results){
-      var file = results[0];
-      
-      console.log(file.filename); // a_string_filename.ext
-    }).catch(function(err){
-      // Everything has been rolled back.
-      
-      //log the error which caused the failure
-      console.log(err);
-    });
-  ```
-
-  *Note: No changes will be made to to your database until you call task.run()*
-
-  <br> 
-
-### <a name="task_removefile"></a>task.removeFile(options): Remove a file from the db via [GridFS][]
-
-  > options (required): Same as [GridStore options][]
-  
-  Removes a file that matches "options" from the database using GridFS. The result of this operation is a GridStore instance (can be ignored). See [GridStore]
-  
-  [GridStore]: <http://mongodb.github.io/node-mongodb-native/api-generated/gridstore.html>
-  
-  ```javascript
-  task.removeFile({_id: fileId})
-    .update("SomeCollection", updateConditions, updateData)
-    .run()
-    .then(function(results){
-      // if you need the gridStore instance
-      var gridStore = results[0];
-    })
-    .catch(function(err){
-      // Everything has been rolled back.
-      
-      //log the error which caused the failure
-      console.log(err);
-    });
-  ```
-
-  *Note: No changes will be made to to your database until you call task.run()*
-
-  <br> 
-  
 ### <a name="task_run"></a>task.run(options): Run a task.
 
   > returns: Promise
@@ -415,8 +333,6 @@ with Fawn:
   - the result of save is, [insertOneWriteOpResult](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#~insertOneWriteOpResult) for mongodb native, and the saved doc for mongoose
   - the result of remove is, [deleteWriteOpResult](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#~deleteWriteOpResult) for mongodb native, and [writeOpResult](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#~WriteOpResult) for mongoose
   - the result of update is, [updateWriteOpResult](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#~updateWriteOpResult) for mongodb native, and the [mongodb update output](https://docs.mongodb.com/v2.6/reference/command/update/#output) for mongoose
-  - the result of saveFile is the saved file object
-  - the result of removeFile is a [GridStore][] instance
   <br>
   
 ### <a name="fawn_roller"></a>Fawn.Roller(): Get the Roller object.
