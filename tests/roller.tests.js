@@ -76,42 +76,6 @@ module.exports = describe("Roller", function(){
           return expect(TestMdlC.find().exec()).to.eventually.have.length(0);
         });
     });
-
-    it("should rollback file save", function () {
-      var gfs = Grid(mongoose.connection.db);
-      var id = dbUtils.generateId();
-
-      return task.saveFile(TEST_FILE_PATH, {_id: id})
-        .save(TestMdlA, {_id: ["fail"]}, {name: "fail"})
-        .run()
-        .then(failure)
-        .catch(function () {
-          return expect(dbUtils.fileExists(id, gfs)).to.eventually.equal(false);
-        });
-    });
-
-    it("should rollback file remove", function (done) {
-      var gfs = Grid(mongoose.connection.db);
-      var id = dbUtils.generateId();
-      var writeStream = gfs.createWriteStream({_id: id});
-
-      writeStream.on("close", function () {
-        task.removeFile({_id: id})
-          .save(TestMdlA, {_id: ["fail"]}, {name: "fail"})
-          .run()
-          .then(failure)
-          .catch(function () {
-            dbUtils.fileExists(id, gfs).then(function (exists) {
-              if (exists) dbUtils.removeFile(id, gfs);
-
-              expect(exists).to.equal(true);
-              done();
-            });
-          });
-      });
-
-      require("fs").createReadStream(TEST_FILE_PATH).pipe(writeStream);
-    });
   });
 });
 

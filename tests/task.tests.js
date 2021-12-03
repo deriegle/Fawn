@@ -226,31 +226,6 @@ module.exports = describe("Task", function(){
     });
   });
 
-  describe("#saveFile", function () {
-    it("should save file successfully", function () {
-      return task.saveFile(TEST_FILE_PATH, {_id: TEST_FILE_ID, filename: TEST_FILE_NAME})
-        .run();
-    });
-
-    it("Should have file with _id '" + TEST_FILE_ID + "' in database", function () {
-      var gfs = Grid(mongoose.connection.db);
-
-      return expect(dbUtils.fileExists(TEST_FILE_ID, gfs)).to.eventually.equal(true);
-    });
-  });
-
-  describe("#removeFile", function () {
-    it("should remove file successfully", function () {
-      return task.removeFile({filename: TEST_FILE_NAME}).run();
-    });
-
-    it("Should not have file with _id '" + TEST_FILE_ID + "' in database", function () {
-      var gfs = Grid(mongoose.connection.db);
-
-      return expect(dbUtils.fileExists(TEST_FILE_ID, gfs)).to.eventually.equal(false);
-    });
-  });
-
   describe("allTogetherNow", function(){
     it("should save, update and remove successfully", function(){
       var brian = new TestMdlB({name: "Brian Griffin", age: 18});
@@ -294,7 +269,9 @@ module.exports = describe("Task", function(){
   describe("Run with mongoose", function(){
     var coll = "ufc_fighters";
 
-    it("should run without errors", function(){
+    it("should run without errors", async function(){
+      await dbUtils.dropCollection(coll);
+
       task.save(coll, {name: "Jon Jones", champ: false})
         .save(coll, {name: "Daniel Cormier", champ: true})
         .update(coll, {name: {$ojFuture: "0.name"}}, {champ: true})
@@ -339,11 +316,9 @@ module.exports = describe("Task", function(){
         task.save(gabe)
           .save(TEST_COLLECTION_A, {name: "Gabe's Owner", age: 60})
           .update(gabe, {age: 64})
-          .saveFile(TEST_FILE_PATH, {_id: id, filename: {$ojFuture: "0.ops.0.name"}})
-          .removeFile({_id: id})
           .remove(TEST_COLLECTION_A, {name: "Gabe's Owner"})
           .run())
-        .to.eventually.have.length(6);
+        .to.eventually.have.length(4);
     });
   });
 

@@ -1,7 +1,7 @@
 "use strict";
 
 var config = {
-  db: "mongodb://127.0.0.1:27017/"
+  db: "mongodb://127.0.0.1:27018/"
   , DB: "OJFAWNTESTS"
   , TASKS: "lints"
   , Fawn: require("./lib/fawn")
