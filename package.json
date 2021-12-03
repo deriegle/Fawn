@@ -31,8 +31,7 @@
   "license": "MIT",
   "dependencies": {
     "bluebird": "3.5.0",
-    "gridfs-stream": "1.1.1",
-    "mongoose": "4.12.3"
+    "mongoose": "6.0.14"
   },
   "devDependencies": {
     "chai": "4.1.0",

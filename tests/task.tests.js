@@ -9,13 +9,13 @@ module.exports = describe("Task", function(){
       var model = "cars";
 
       task.initModel(model, {
-        make: {type: String, required: true}
-        , year: {type: Number, required: true}
+        make: {type: String, required: true},
+        year: {type: Number, required: true},
       });
 
       task.save(model, {name: "John"});
 
-      return expect(task.run({useMongoose: true})).to.eventually.not.be.rejected;//With(/validation failed/);
+      return expect(task.run()).to.eventually.not.be.rejected;//With(/validation failed/);
     });
   });
 
@@ -133,7 +133,7 @@ module.exports = describe("Task", function(){
       task.save(cat)
         .update(cat, c)
         .options({viaSave: true})
-        .run({useMongoose: true})
+        .run()
         .then(function(results){
           expect(results[1].age).to.equal(newAge);
           done();
@@ -183,8 +183,7 @@ module.exports = describe("Task", function(){
         .then(function(result){
           expect(result.heroes[0].hero).to.equal("Captain Underpants");
 
-          return TestMdlA.remove({name: "Frank", age: 12})
-            .exec();
+          return TestMdlA.deleteOne({name: "Frank", age: 12}).exec();
         });
     });
   });
@@ -223,31 +222,6 @@ module.exports = describe("Task", function(){
 
     it(TEST_COLLECTION_B + " should have length 1", function(){
       return expect(TestMdlB.find().exec()).to.eventually.have.length(1);
-    });
-  });
-
-  describe("#saveFile", function () {
-    it("should save file successfully", function () {
-      return task.saveFile(TEST_FILE_PATH, {_id: TEST_FILE_ID, filename: TEST_FILE_NAME})
-        .run();
-    });
-
-    it("Should have file with _id '" + TEST_FILE_ID + "' in database", function () {
-      var gfs = Grid(mongoose.connection.db);
-
-      return expect(dbUtils.fileExists(TEST_FILE_ID, gfs)).to.eventually.equal(true);
-    });
-  });
-
-  describe("#removeFile", function () {
-    it("should remove file successfully", function () {
-      return task.removeFile({filename: TEST_FILE_NAME}).run();
-    });
-
-    it("Should not have file with _id '" + TEST_FILE_ID + "' in database", function () {
-      var gfs = Grid(mongoose.connection.db);
-
-      return expect(dbUtils.fileExists(TEST_FILE_ID, gfs)).to.eventually.equal(false);
     });
   });
 
@@ -294,15 +268,15 @@ module.exports = describe("Task", function(){
   describe("Run with mongoose", function(){
     var coll = "ufc_fighters";
 
-    it("should run without errors", function(){
+    it("should run without errors", async function(){
+      await dbUtils.dropCollection(coll);
+
       task.save(coll, {name: "Jon Jones", champ: false})
         .save(coll, {name: "Daniel Cormier", champ: true})
-        .update(coll, {name: {$ojFuture: "0.name"}}, {champ: true})
-        .update(coll, {name: {$ojFuture: "1.name"}}, {champ: false})
-        .save(coll, {name: "Damian Maia", champ: false})
-        .remove(coll, {_id: {$ojFuture: "4._id"}});
+        .update(coll, {name: "Jon Jones" }, {champ: true})
+        .update(coll, {name: "Daniel Cormier" }, {champ: false})
 
-      return expect(task.run({useMongoose: true}))
+      return expect(task.run())
         .to.eventually.not.be.rejected;
     });
 
@@ -339,43 +313,9 @@ module.exports = describe("Task", function(){
         task.save(gabe)
           .save(TEST_COLLECTION_A, {name: "Gabe's Owner", age: 60})
           .update(gabe, {age: 64})
-          .saveFile(TEST_FILE_PATH, {_id: id, filename: {$ojFuture: "0.ops.0.name"}})
-          .removeFile({_id: id})
           .remove(TEST_COLLECTION_A, {name: "Gabe's Owner"})
           .run())
-        .to.eventually.have.length(6);
-    });
-  });
-
-  describe("Templating tests for future data", function () {
-    it("task with templated data should run successfully", function () {
-      var mickey = new TestMdlB({name: "Mickey Mouse", age: 53, list: [{num: 53}]});
-      var mick = new TestMdlA({name: "Mick", age: 3});
-
-      return task.save(mickey)
-        .save(mick)
-        .save(TEST_COLLECTION_A, {name: "Alfie", age: {$ojFuture: "1.ops.0.age"}})
-        .save(TEST_COLLECTION_B, {name: "Minnie Mouse", age: {$ojFuture: "0.ops.0.list.0.num"}})
-        .update(TEST_COLLECTION_B, {name: {$ojFuture: "0.ops.0.name"}}, {age: {$ojFuture: "1.ops.0.age"}})
-        .update(TEST_COLLECTION_A, {name: {$ojFuture: "1.ops.0.name"}}, {age: {$ojFuture: "3.ops.0.age"}})
-        .remove(TEST_COLLECTION_A, {name: {$ojFuture: "2.ops.0.name"}, age: 3})
-        .run();
-    });
-
-    it("Should have Mickey Mouse in " + TEST_COLLECTION_B + " with age 3", function () {
-      return expect(TestMdlB.find({name: "Mickey Mouse", age: 3}).exec()).to.eventually.have.length(1);
-    });
-
-    it("Should have Mick in " + TEST_COLLECTION_A + " with age 53", function () {
-      return expect(TestMdlA.find({name: "Mick", age: 53}).exec()).to.eventually.have.length(1);
-    });
-
-    it("Should have Minnie Mouse in " + TEST_COLLECTION_B + " with age 53", function () {
-      return expect(TestMdlB.find({name: "Minnie Mouse", age: 53}).exec()).to.eventually.have.length(1);
-    });
-
-    it("Should not have Alfie in " + TEST_COLLECTION_A, function () {
-      return expect(TestMdlA.find({name: "Alfie"}).exec()).to.eventually.have.length(0);
+        .to.eventually.have.length(4);
     });
   });
 });

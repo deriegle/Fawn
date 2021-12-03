@@ -66,35 +66,13 @@ task.update("Accounts", {firstName: "John", lastName: "Smith"}, {$inc: {balance:
     console.log(err);
   });
 ```
-[GridFS]: <https://docs.mongodb.com/manual/core/gridfs/>
-
-Files can be saved to and removed from [GridFS][]. Here's how you might update a user's profile image:
-```javascript
-var newImageId = someMongoDbId;
-
-task.saveFile("/path/to/new/profile/img", {_id: newImageId, filename: "profile.png"})
-  .removeFile({_id: oldImageId})
-  .update("users", {_id: userId}, {profileImageId: newImageId})
-  .run()
-  .then(function(results){
-    var newImgFile = results[0];
-    
-    console.log(newImgFile.filename) // profile.png
-  })
-  .catch(function(err){
-    // Everything has been rolled back.
-    
-    // log the error which caused the failure
-    console.log(err);
-  });
-```
 
 By default, tasks run using the native driver but you can opt for mongoose. If you prefer not to chain function calls, you don't have to:
 
 ```javascript
 task.update("Accounts", {firstName: "Broke", lastName: "Ass"}, {$inc: {balance: -20}})
 task.update("Accounts", {firstName: "The", lastName: "Plug"}, {$inc: {balance: 20}})
-task.run({useMongoose: true})
+task.run()
   .then(function(){
     // update is complete
   })
@@ -127,8 +105,6 @@ roller.roll()
 - [task.update](#task_update)
 - [task.options](#task_options)
 - [task.remove](#task_remove)
-- [task.saveFile](#task_savefile)
-- [task.removeFile](#task_removefile)
 - [task.run](#task_run)
 - [Fawn.Roller](#fawn_roller)
 - [Roller.roll](#roller_roll)
@@ -187,7 +163,6 @@ var task = Fawn.Task();
   
   > schema (optional): Same as object passed to [mongoose Schema](http://mongoosejs.com/docs/guide.html#definition). Also see [validation](http://mongoosejs.com/docs/validation.html)
   
-  *Note: For model validation to work, run task with useMongoose set to true*
   <br>
 <br>Initalizes a mongoose model with the provided schema. If you're using mongoose, define your models with mongoose wherever possible. If the model has been defined by mongoose before this function is called, mongoose will throw an OverwriteModelError and if it was defined by Fawn, Fawn will throw an Error. Models can be defined only once.
   
@@ -199,7 +174,7 @@ var task = Fawn.Task();
   
   task.initModel("comedians", schema)
     .save("comedians", {name: "Kevin Hart", specials: [{title: "What Now", year: 2016}]})
-    .run({useMongoose: true})
+    .run()
     .then(function(results){
       console.log(results);
     });
@@ -296,7 +271,7 @@ with Fawn:
   
   task.update(doc, newDoc)
     .options({viaSave: true})
-    .run({useMongoose: true})
+    .run()
     .then(console.log);
   ```
   *Note: No changes will be made to to your database until you call task.run()*
@@ -328,68 +303,8 @@ with Fawn:
 
   <br> 
   
-### <a name="task_savefile"></a>task.saveFile(filePath, options): Save a file to the db via [GridFS][]
-
-  > filePath (required): Path to the file 
-  
-  > options (optional): Same as [GridStore options][]
-  
-  [GridStore options]: <http://mongodb.github.io/node-mongodb-native/api-generated/gridstore.html#constructor>
-  
-  Saves the file at "filePath" to the database using GridFS. The result of this operation is the saved file's object. See [File object](https://docs.mongodb.com/manual/core/gridfs/#the-files-collection)
-  
-  ```javascript
-  task.saveFile("path/to/some/file", {filename: "a_string_filename.ext"})
-    .update("SomeCollection", updateConditions, updateData)
-    .run()
-    .then(function(results){
-      var file = results[0];
-      
-      console.log(file.filename); // a_string_filename.ext
-    }).catch(function(err){
-      // Everything has been rolled back.
-      
-      //log the error which caused the failure
-      console.log(err);
-    });
-  ```
-
-  *Note: No changes will be made to to your database until you call task.run()*
-
-  <br> 
-
-### <a name="task_removefile"></a>task.removeFile(options): Remove a file from the db via [GridFS][]
-
-  > options (required): Same as [GridStore options][]
-  
-  Removes a file that matches "options" from the database using GridFS. The result of this operation is a GridStore instance (can be ignored). See [GridStore]
-  
-  [GridStore]: <http://mongodb.github.io/node-mongodb-native/api-generated/gridstore.html>
-  
-  ```javascript
-  task.removeFile({_id: fileId})
-    .update("SomeCollection", updateConditions, updateData)
-    .run()
-    .then(function(results){
-      // if you need the gridStore instance
-      var gridStore = results[0];
-    })
-    .catch(function(err){
-      // Everything has been rolled back.
-      
-      //log the error which caused the failure
-      console.log(err);
-    });
-  ```
-
-  *Note: No changes will be made to to your database until you call task.run()*
-
-  <br> 
-  
 ### <a name="task_run"></a>task.run(options): Run a task.
 
-  > options: {useMongoose: Boolean}
-  
   > returns: Promise
 
   For the database changes to occur, you must call task.run(). This function returns a promise. On success, the promise is resolved with an array containing the [node-mongodb-native](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html) or [mongoose](http://mongoosejs.com/docs/api.html) result of each operation in sequence. If an error occurs, the promise is rejected with the error that caused the failure.
@@ -397,7 +312,7 @@ with Fawn:
   ```javascript
   task.update("Accounts", {firstName: "John", lastName: "Smith"}, {$inc: {balance: -20}})
     .update("Accounts", {firstName: "Broke", lastName: "Ass"}, {$inc: {balance: 20}})
-    .run() // or run({useMongoose: true}); 
+    .run()
     .then(function(results){
       //task is complete 
 
@@ -418,8 +333,6 @@ with Fawn:
   - the result of save is, [insertOneWriteOpResult](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#~insertOneWriteOpResult) for mongodb native, and the saved doc for mongoose
   - the result of remove is, [deleteWriteOpResult](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#~deleteWriteOpResult) for mongodb native, and [writeOpResult](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#~WriteOpResult) for mongoose
   - the result of update is, [updateWriteOpResult](http://mongodb.github.io/node-mongodb-native/2.2/api/Collection.html#~updateWriteOpResult) for mongodb native, and the [mongodb update output](https://docs.mongodb.com/v2.6/reference/command/update/#output) for mongoose
-  - the result of saveFile is the saved file object
-  - the result of removeFile is a [GridStore][] instance
   <br>
   
 ### <a name="fawn_roller"></a>Fawn.Roller(): Get the Roller object.
@@ -446,28 +359,6 @@ with Fawn:
     });
   ```
   <br>
-  
-## <a name="misc"></a>Miscellaneous 
-
-### Using the result of previous steps in subsequent steps
-  You might want to use the result of a previous step in a subsequent step. You can do this using a template object with the key "$ojFuture". Syntax: {$ojFuture: "indexOfStep.resultProperty1.property2.-----.propertyN"}. Here's how:
-  
-  ```javascript
-  task.save("Kids", {name: {full: "Brody Obi"}}) //result will be {_id: someMongoId, name: {full: "Brody Obi"}}
-    .update("Parents", {_id: parentId}, {firstChild: {id: {$ojFuture: "0._id"} , fullName: {$ojFuture: "0.name.full"}})
-    .run({useMongoose: true})
-    .then(function(){
-    	// task is complete
-    })
-    .catch(function(err){
-      // Everything has been rolled back.
-    
-      //log the error which caused the failure
-      console.log(err);
-    });
-  ```
-  To use this feature you need to know the exact format of the step's result. For Reference: [Results](#task_run_results)
-  
   
 ## <a name="test"></a>Test
 
