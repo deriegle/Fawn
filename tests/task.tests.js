@@ -9,8 +9,8 @@ module.exports = describe("Task", function(){
       var model = "cars";
 
       task.initModel(model, {
-        make: {type: String, required: true}
-        , year: {type: Number, required: true}
+        make: {type: String, required: true},
+        year: {type: Number, required: true},
       });
 
       task.save(model, {name: "John"});
@@ -183,8 +183,7 @@ module.exports = describe("Task", function(){
         .then(function(result){
           expect(result.heroes[0].hero).to.equal("Captain Underpants");
 
-          return TestMdlA.remove({name: "Frank", age: 12})
-            .exec();
+          return TestMdlA.deleteOne({name: "Frank", age: 12}).exec();
         });
     });
   });

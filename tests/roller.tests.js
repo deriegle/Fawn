@@ -12,47 +12,49 @@ module.exports = describe("Roller", function(){
         .save(TestMdlB, {name: "Puss in Boots", age: 26})
         .update(TestMdlA, {name: "BoJack Horseman"}, {name: "Samurai Jack", age: 300})
         .update(TEST_COLLECTION_B, {name: "Puss in Boots"}, {name: "Aristocat", age: 6})
-        .save(TEST_COLLECTION_A, {_id: ["fail"]}, {name: "fail"});
+        .save(TEST_COLLECTION_A, {_id: ["fail"]});
 
       return expect(task.run({ useMongoose: false }))
         .to.eventually.be
-        .rejectedWith(/can't use an array for _id/);
+        .rejectedWith(/can\'t use an array for _id/);
     });
 
     it("should rollback save", function(){
       return task.save(TestMdlA, {name: "Arya Stark", age: 34})
-        .save(TestMdlA, {_id: ["fail"]}, {name: "fail"})
+        .save(TestMdlA, {_id: ["fail"]})
         .run({ useMongoose: false })
-        .then(failure)
+        .then(ensureFailure)
         .catch(function(){
           return expect(TestMdlA.find({name: "Arya Stark"}).exec())
             .to.eventually.have.length(0);
         });
     });
 
-    it("should rollback update", function(){
+    it("should rollback update", async function(){
+      await dbUtils.dropCollection(TEST_COLLECTION_A);
+
       return task.save(TestMdlA, {name: "Tyrion Lannister", age: 34})
         .run()
         .then(function(result){
           // Tyrion's id
           const id = result[0]._id;
 
-          return task.update(TestMdlA, {_id: id}, {name: "Jamie", $inc: {age: 1}})
-            .save(TestMdlA, {_id: ["fail"]}, {name: "fail"})
+          return task
+            .update(TestMdlA, {_id: id}, { $inc: { age: 1 } })
+            .save(TestMdlA, { _id: [id] })
             .run({ useMongoose: false })
-            .then(failure)
-            .catch(function(){
-              return expect(TestMdlA.find({name: "Tyrion Lannister"}).exec())
-                .to.eventually.have.length(1);
+            .then(ensureFailure)
+            .catch(function(err){
+              return expect(TestMdlA.find({name: "Tyrion Lannister", age: 34}).exec()).to.eventually.have.length(1);
             });
         })
     });
 
     it("should rollback remove", function(){
       return task.remove(TestMdlA, {name: "Tyrion Lannister"})
-        .save(TestMdlA, {_id: ["fail"]}, {name: "fail"})
+        .save(TestMdlA, {_id: ["fail"]})
         .run({ useMongoose: false })
-        .then(failure)
+        .then(ensureFailure)
         .catch(function(){
           return expect(TestMdlA.find({name: "Tyrion Lannister"}).exec()).to.eventually.have.length(1);
         });
@@ -71,7 +73,7 @@ module.exports = describe("Roller", function(){
         .options({viaSave: true})
         .save(dog3)
         .run()
-        .then(failure)
+        .then(ensureFailure)
         .catch(function(){
           return expect(TestMdlC.find().exec()).to.eventually.have.length(0);
         });
@@ -79,7 +81,7 @@ module.exports = describe("Roller", function(){
   });
 });
 
-function failure(){
+function ensureFailure() {
   // TestMdlA.find().exec(console.log);
   throw new Error("failed");
 }
